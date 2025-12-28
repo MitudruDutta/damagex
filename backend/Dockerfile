@@ -3,12 +3,10 @@ FROM python:3.11-slim as builder
 
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies
 COPY requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
@@ -17,25 +15,28 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser -d /home/appuser appuser
+# Create non-root user with home directory
+RUN groupadd -r appuser && useradd -r -g appuser -d /home/appuser -m appuser \
+    && mkdir -p /home/appuser/.cache && chown -R appuser:appuser /home/appuser
 
-# Copy installed packages from builder
-COPY --from=builder /root/.local /home/appuser/.local
-ENV PATH=/home/appuser/.local/bin:$PATH
+# Copy installed packages with correct ownership
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
 # Copy application code
-COPY . .
-RUN chown -R appuser:appuser /app
+COPY --chown=appuser:appuser . .
 
 # Environment variables
-ENV PYTHONUNBUFFERED=1
-ENV MODEL_PATH=/app/model/saved_model.pth
+ENV PATH=/home/appuser/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    MODEL_PATH=/app/model/saved_model.pth \
+    TORCH_HOME=/home/appuser/.cache/torch
 
 USER appuser
 
-# Expose port
 EXPOSE 8000
 
-# Run the application
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import httpx; httpx.get('http://localhost:8000/health', timeout=5)" || exit 1
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
