@@ -73,3 +73,9 @@ Thumbs.db
 # Environment variables
 .env
 .env.local
+
+
+# Gemini
+
+.gemini/
+GEMINI.md

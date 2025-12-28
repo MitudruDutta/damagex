@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+    container_name: damagex-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/app/model/saved_model.pth
+      - ALLOWED_ORIGINS=http://localhost:3000
+    volumes:
+      - ./backend/model:/app/model
+    networks:
+      - damagex-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1/predict/
+    container_name: damagex-frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - damagex-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  damagex-network:
+    driver: bridge

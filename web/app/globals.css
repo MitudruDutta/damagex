@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ===== CUSTOM FONTS ===== */
+.font-orbitron {
+  font-family: var(--font-orbitron), system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-mono), monospace;
+}
+
+/* ===== TRACKING ===== */
+.tracking-custom-tight {
+  letter-spacing: -0.025em;
+}
+
+.tracking-custom-tighter {
+  letter-spacing: -0.04em;
+}
+
+/* ===== GRADIENT TEXT ===== */
+.gradient-text {
+  @apply bg-gradient-to-r from-foreground via-foreground/80 to-foreground bg-clip-text text-transparent;
+}
+
+/* ===== GLASS EFFECT ===== */
+.glass {
+  @apply bg-background/80 backdrop-blur-xl border-b border-border/50;
+}
+
+/* ===== GRID PATTERN ===== */
+.grid-pattern {
+  background-image: 
+    linear-gradient(to right, hsl(var(--foreground) / 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--foreground) / 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ===== SURFACE COLORS ===== */
+@layer utilities {
+  .bg-surface-100 {
+    @apply bg-muted/50;
+  }
+  
+  .bg-surface-200 {
+    @apply bg-muted/70;
+  }
+}
+
+/* Light mode specific surface adjustments */
+:root .bg-surface-100\/50 {
+  background-color: hsl(0 0% 80% / 0.7);
+}
+
+:root .bg-surface-100 {
+  background-color: hsl(0 0% 75% / 0.9);
+}
+
+:root .bg-surface-200 {
+  background-color: hsl(0 0% 70% / 1);
+}
+
+/* Light mode text adjustments for better contrast */
+:root .text-muted-foreground {
+  color: hsl(0 0% 35%);
+}
+
+/* ===== ELECTRIC & SIGNAL COLORS ===== */
+@layer utilities {
+  .text-electric-400 {
+    @apply text-blue-400;
+  }
+  
+  .text-electric-500 {
+    @apply text-blue-500;
+  }
+  
+  .bg-electric-500 {
+    @apply bg-blue-500;
+  }
+  
+  .bg-electric-600\/10 {
+    @apply bg-blue-600/10;
+  }
+  
+  .border-electric-500 {
+    @apply border-blue-500;
+  }
+  
+  .border-electric-500\/20 {
+    @apply border-blue-500/20;
+  }
+  
+  .border-electric-500\/30 {
+    @apply border-blue-500/30;
+  }
+  
+  .border-signal-500\/30 {
+    @apply border-orange-500/30;
+  }
+}
+
+/* ===== SCROLLBAR STYLES ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-foreground/20 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-foreground/30;
+}
+
+/* ===== SELECTION ===== */
+::selection {
+  @apply bg-foreground/20 text-foreground;
+}
