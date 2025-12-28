@@ -29,6 +29,7 @@ export function ScannerUpload({
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setDropError(null)
+    setIsDragging(false)
     const selectedFile = acceptedFiles[0]
     if (selectedFile) {
       onFileSelect(selectedFile)
@@ -36,6 +37,7 @@ export function ScannerUpload({
   }, [onFileSelect])
 
   const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+    setIsDragging(false)
     const rejection = fileRejections[0]
     if (rejection) {
       const errorCode = rejection.errors[0]?.code

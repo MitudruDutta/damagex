@@ -19,7 +19,7 @@ class Settings(BaseSettings):
         'Rear Normal'
     ]
     
-    ALLOWED_ORIGINS: str = "*"
+    ALLOWED_ORIGINS: List[str] = ["*"]
     GATEKEEPER_FAIL_CLOSED: bool = False
 
     @field_validator('ALLOWED_ORIGINS', mode='before')

@@ -12,7 +12,8 @@ import {
   Sparkles,
   Percent,
   ScanLine,
-  AlertTriangle
+  AlertTriangle,
+  ImageOff
 } from "lucide-react"
 import { DamageGauge } from "@/components/damage-gauge"
 import { BentoCard, BentoCardHeader, BentoCardContent, BentoStatCard } from "@/components/bento-card"
@@ -31,6 +32,7 @@ interface PredictionResult {
 export default function ResultsPage() {
   const router = useRouter()
   const [data, setData] = useState<PredictionResult | null>(null)
+  const [imageError, setImageError] = useState(false)
 
   useEffect(() => {
     const storedData = sessionStorage.getItem("damagex_result")
@@ -46,9 +48,14 @@ export default function ResultsPage() {
         router.replace("/")
         return
       }
+      // Check if imageUrl is a blob URL (which may be stale)
+      if (parsed.imageUrl.startsWith("blob:")) {
+        console.warn("Blob URL detected - may be stale after navigation")
+      }
       setData(parsed)
     } catch (e) {
       console.error("Failed to parse result data", e)
+      sessionStorage.removeItem("damagex_result")
       router.replace("/")
     }
   }, [router])
@@ -142,11 +149,19 @@ export default function ResultsPage() {
               />
               <BentoCardContent className="pt-4">
                 <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-surface-200">
-                  <img
-                    src={data.imageUrl}
-                    alt="Analyzed Vehicle"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
+                  {imageError ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                      <ImageOff className="w-12 h-12 mb-2" />
+                      <span className="text-sm">Image unavailable</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={data.imageUrl}
+                      alt="Analyzed Vehicle"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={() => setImageError(true)}
+                    />
+                  )}
                 </div>
               </BentoCardContent>
             </BentoCard>

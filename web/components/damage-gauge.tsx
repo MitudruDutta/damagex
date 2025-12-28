@@ -90,23 +90,21 @@ export function DamageGauge({ grade, confidence }: DamageGaugeProps) {
             strokeLinecap="round"
           />
           
-          {/* Progress arc */}
-          {mounted && (
-            <motion.path
-              d="M 10 100 A 90 90 0 0 1 190 100"
-              fill="none"
-              stroke={config.color}
-              strokeWidth="12"
-              strokeLinecap="round"
-              strokeDasharray="283"
-              initial={{ strokeDashoffset: 283 }}
-              animate={{ strokeDashoffset: 283 - (283 * normalizedConfidence) }}
-              transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
-              style={{
-                filter: `drop-shadow(0 0 8px ${config.glowColor})`,
-              }}
-            />
-          )}
+          {/* Progress arc - show track immediately, animate fill after mount */}
+          <motion.path
+            d="M 10 100 A 90 90 0 0 1 190 100"
+            fill="none"
+            stroke={config.color}
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeDasharray="283"
+            initial={{ strokeDashoffset: 283 }}
+            animate={{ strokeDashoffset: mounted ? 283 - (283 * normalizedConfidence) : 283 }}
+            transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
+            style={{
+              filter: `drop-shadow(0 0 8px ${config.glowColor})`,
+            }}
+          />
         </svg>
 
         {/* Center content */}
@@ -123,29 +121,27 @@ export function DamageGauge({ grade, confidence }: DamageGaugeProps) {
         </div>
 
         {/* Needle indicator */}
-        {mounted && (
-          <motion.div
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 origin-bottom"
-            initial={{ rotate: -90 }}
-            animate={{ rotate: -90 + angle }}
-            transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
-            style={{ height: "70px" }}
-          >
-            <div 
-              className="w-1 h-full rounded-full mx-auto"
-              style={{ 
-                background: `linear-gradient(to top, ${config.color}, transparent)`,
-              }}
-            />
-            <div 
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full"
-              style={{ 
-                background: config.color,
-                boxShadow: `0 0 10px ${config.glowColor}`,
-              }}
-            />
-          </motion.div>
-        )}
+        <motion.div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 origin-bottom"
+          initial={{ rotate: -90 }}
+          animate={{ rotate: mounted ? -90 + angle : -90 }}
+          transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
+          style={{ height: "70px" }}
+        >
+          <div 
+            className="w-1 h-full rounded-full mx-auto"
+            style={{ 
+              background: `linear-gradient(to top, ${config.color}, transparent)`,
+            }}
+          />
+          <div 
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full"
+            style={{ 
+              background: config.color,
+              boxShadow: `0 0 10px ${config.glowColor}`,
+            }}
+          />
+        </motion.div>
       </div>
 
       {/* Grade label */}

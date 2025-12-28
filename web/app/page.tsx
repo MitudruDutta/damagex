@@ -22,8 +22,14 @@ export default function Home() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8001/api/v1/predict/"
         
         // Parse URL and build health endpoint at root
-        const url = new URL(apiUrl, window.location.origin)
-        const healthUrl = `${url.origin}/health`
+        let healthUrl: string
+        try {
+          const url = new URL(apiUrl)
+          healthUrl = `${url.origin}/health`
+        } catch {
+          // Fallback for relative URLs
+          healthUrl = "/health"
+        }
         
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000)
@@ -46,7 +52,6 @@ export default function Home() {
     }
     
     checkBackend()
-    // Re-check every 30 seconds
     const interval = setInterval(checkBackend, 30000)
     return () => clearInterval(interval)
   }, [])
@@ -82,6 +87,15 @@ export default function Home() {
     setError(null)
   }, [previewUrl])
 
+  // Cleanup object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
+
   const handleAnalyze = async () => {
     if (!file) return
 
@@ -92,12 +106,14 @@ export default function Home() {
     formData.append("file", file)
 
     const startTime = Date.now()
+    const controller = new AbortController()
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8001/api/v1/predict/"
       const response = await fetch(apiUrl, {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       })
 
       const contentType = response.headers.get("content-type")
@@ -118,19 +134,29 @@ export default function Home() {
       const reader = new FileReader()
       reader.onloadend = () => {
         try {
-          sessionStorage.setItem("damagex_result", JSON.stringify({
+          const resultData = {
             category: data.class || data.category || "Unknown",
             confidence: data.confidence || 0,
             details: data.all_scores || data.details || {},
-            imageUrl: reader.result as string, // base64 data URL
+            imageUrl: reader.result as string,
             processingTime: processingTime,
             isValid: data.is_valid !== undefined ? data.is_valid : true,
             warning: data.warning || null,
-          }))
+          }
+          
+          // Check size before storing (rough estimate)
+          const dataSize = JSON.stringify(resultData).length
+          if (dataSize > 4 * 1024 * 1024) {
+            // If too large, store without image and use object URL instead
+            resultData.imageUrl = previewUrl
+          }
+          
+          sessionStorage.setItem("damagex_result", JSON.stringify(resultData))
           router.push("/results")
         } catch (storageErr) {
           console.error("Session storage error:", storageErr)
-          setError("Failed to save analysis result locally. Your browser storage might be full.")
+          setError("Failed to save analysis result. Image may be too large.")
+          setIsScanning(false)
         }
       }
       reader.onerror = () => {

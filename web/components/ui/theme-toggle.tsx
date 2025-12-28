@@ -19,7 +19,8 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   }, [])
 
   if (!mounted) {
-    return null
+    // Return placeholder with same dimensions to prevent layout shift
+    return <div className={cn("w-16 h-8", className)} />
   }
 
   const isDark = theme === "dark"
