@@ -38,7 +38,7 @@ async def predict_damage(file: UploadFile = File(...)):
             contents.extend(chunk)
         
         classifier = DamageClassifier.get_instance()
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         
         result = await loop.run_in_executor(None, classifier.predict, bytes(contents))
         
@@ -55,3 +55,5 @@ async def predict_damage(file: UploadFile = File(...)):
     except Exception as e:
         logger.exception("Unexpected error during image processing")
         raise HTTPException(status_code=500, detail="Internal Processing Error")
+    finally:
+        await file.close()

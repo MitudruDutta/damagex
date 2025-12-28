@@ -1,20 +1,16 @@
-import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from functools import lru_cache
+from typing import List
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "DamageX Inference Engine"
     
-    # Model Configuration
-    # Prioritize ENV var, default to relative path resolved via pathlib
-    MODEL_PATH: str = os.getenv(
-        "MODEL_PATH", 
-        str(Path(__file__).resolve().parents[2] / "model" / "saved_model.pth")
-    )
+    MODEL_PATH: str = str(Path(__file__).resolve().parents[2] / "model" / "saved_model.pth")
     NUM_CLASSES: int = 6
-    CLASS_NAMES: list[str] = [
+    CLASS_NAMES: List[str] = [
         'Front Breakage', 
         'Front Crushed', 
         'Front Normal', 
@@ -23,21 +19,19 @@ class Settings(BaseSettings):
         'Rear Normal'
     ]
     
-    # CORS Configuration
-    # In production, this should be a comma-separated string of allowed origins
-    ALLOWED_ORIGINS: list[str] = [
-        origin.strip() 
-        for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",") 
-        if origin.strip()
-    ]
-    
-    # Gatekeeper Security Posture
-    # False = Fail Open (Allow on error/timeout) - Default for availability
-    # True = Fail Closed (Block on error/timeout) - Safer for high-security
+    ALLOWED_ORIGINS: str = "*"
     GATEKEEPER_FAIL_CLOSED: bool = False
+
+    @field_validator('ALLOWED_ORIGINS', mode='before')
+    @classmethod
+    def parse_origins(cls, v):
+        if isinstance(v, list):
+            return v
+        return [origin.strip() for origin in v.split(",") if origin.strip()]
 
     class Config:
         case_sensitive = True
+        env_file = ".env"
 
 @lru_cache()
 def get_settings():

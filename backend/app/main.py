@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from app.api.v1.endpoints import predict
 from app.core.config import get_settings
 from app.services.model import DamageClassifier
+from app.services.gatekeeper import VehicleGatekeeper
 import logging
 
 # Configure basic logging
@@ -14,10 +15,10 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Startup: Initializing ML Model...")
+    logger.info("Startup: Initializing ML Models...")
     try:
-        # Fail hard if model cannot load
         DamageClassifier.get_instance()
+        VehicleGatekeeper.get_instance()
     except Exception as e:
         logger.critical(f"Startup Failed: {e}")
         raise RuntimeError("Model initialization failed") from e
@@ -49,5 +50,8 @@ app.include_router(predict.router, prefix=f"{settings.API_V1_STR}/predict", tags
 
 @app.get("/health")
 def health_check():
-    # Use public API for checking status
-    return {"status": "healthy", "model_loaded": DamageClassifier.is_loaded()}
+    return {
+        "status": "healthy",
+        "model_loaded": DamageClassifier.is_loaded(),
+        "gatekeeper_loaded": VehicleGatekeeper.get_instance().model is not None
+    }
