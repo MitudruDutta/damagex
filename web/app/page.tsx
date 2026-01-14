@@ -13,10 +13,14 @@ export default function Home() {
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [isScanning, setIsScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking")
+  const [backendStatus, setBackendStatus] = useState<"checking" | "waking" | "online" | "offline">("checking")
 
   // Check backend health on mount
   useEffect(() => {
+    let retryCount = 0
+    const maxRetries = 3
+    let isMounted = true
+
     const checkBackend = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8001/api/v1/predict/"
@@ -25,6 +29,9 @@ export default function Home() {
         let healthUrl: string
         try {
           const url = new URL(apiUrl)
+          // If the path includes /api/v1/predict, we want the root origin + /health
+          // But carefully: if apiUrl is http://.../api/v1/predict, url.origin is http://...
+          // So origin + /health is correct for the root health check.
           healthUrl = `${url.origin}/health`
         } catch {
           // Fallback for relative URLs
@@ -32,8 +39,13 @@ export default function Home() {
         }
         
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 5000)
+        // Increased timeout to 60s for Render cold starts
+        const timeoutId = setTimeout(() => controller.abort(), 60000)
         
+        if (retryCount > 0 && isMounted) {
+           setBackendStatus("waking")
+        }
+
         const response = await fetch(healthUrl, {
           method: "GET",
           signal: controller.signal,
@@ -41,19 +53,37 @@ export default function Home() {
         
         clearTimeout(timeoutId)
         
+        if (!isMounted) return
+
         if (response && response.ok) {
           setBackendStatus("online")
+          retryCount = 0 // Reset retries on success
         } else {
-          setBackendStatus("offline")
+          if (retryCount < maxRetries) {
+            retryCount++
+            setBackendStatus("waking")
+            // Retry quickly if we think it's just waking up
+            setTimeout(checkBackend, 2000)
+          } else {
+            setBackendStatus("offline")
+          }
         }
       } catch {
-        setBackendStatus("offline")
+        if (isMounted) setBackendStatus("offline")
       }
     }
     
     checkBackend()
-    const interval = setInterval(checkBackend, 30000)
-    return () => clearInterval(interval)
+    // Keep checking periodically to ensure it stays alive or to reconnect
+    const interval = setInterval(() => {
+        retryCount = 0 // Reset retries for periodic checks
+        checkBackend()
+    }, 45000) // Check every 45s to keep it warm (Render sleeps after 15m inactivity)
+    
+    return () => {
+        isMounted = false
+        clearInterval(interval)
+    }
   }, [])
 
   const handleFileSelect = useCallback((selectedFile: File | null) => {
@@ -198,6 +228,19 @@ export default function Home() {
             </div>
           </motion.div>
         )}
+        {backendStatus === "waking" && (
+           <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 50 }}
+            className="fixed bottom-4 right-4 z-50"
+          >
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 backdrop-blur-sm shadow-lg text-xs">
+              <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" />
+              <span className="font-medium">Waking up server... (~30s)</span>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Hero Section */}
@@ -272,14 +315,23 @@ export default function Home() {
             className="flex flex-col items-center gap-2"
           >
             <FlowButton
-              text={isScanning ? "Analyzing..." : backendStatus === "offline" ? "Server Offline" : "Analyze Damage"}
-              icon={isScanning ? <Loader2 className="w-4 h-4 animate-spin" /> : backendStatus === "offline" ? <ServerOff className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+              text={
+                  isScanning ? "Analyzing..." : 
+                  backendStatus === "offline" ? "Server Offline" : 
+                  (backendStatus === "waking" || backendStatus === "checking") ? "Connecting..." : 
+                  "Analyze Damage"
+              }
+              icon={
+                  isScanning || backendStatus === "waking" || backendStatus === "checking" ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+                  backendStatus === "offline" ? <ServerOff className="w-4 h-4" /> : 
+                  <Zap className="w-4 h-4" />
+              }
               onClick={handleAnalyze}
-              disabled={!file || isScanning || backendStatus === "offline"}
-              className={!file || isScanning || backendStatus === "offline" ? "opacity-50" : ""}
+              disabled={!file || isScanning || backendStatus === "offline" || backendStatus === "waking" || backendStatus === "checking"}
+              className={!file || isScanning || backendStatus === "offline" || backendStatus === "waking" || backendStatus === "checking" ? "opacity-50" : ""}
             />
-            {backendStatus === "checking" && (
-              <span className="text-xs text-muted-foreground">Checking server status...</span>
+            {(backendStatus === "checking" || backendStatus === "waking") && (
+              <span className="text-xs text-muted-foreground animate-pulse">Waking up server (cold start may take ~30s)...</span>
             )}
           </motion.div>
 

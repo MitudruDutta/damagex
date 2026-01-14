@@ -18,6 +18,7 @@ import {
 import { DamageGauge } from "@/components/damage-gauge"
 import { BentoCard, BentoCardHeader, BentoCardContent, BentoStatCard } from "@/components/bento-card"
 import { FlowButton } from "@/components/ui/flow-button"
+import Image from "next/image"
 
 interface PredictionResult {
   category: string
@@ -155,10 +156,12 @@ export default function ResultsPage() {
                       <span className="text-sm">Image unavailable</span>
                     </div>
                   ) : (
-                    <img
+                    <Image
                       src={data.imageUrl}
                       alt="Analyzed Vehicle"
+                      fill
                       className="absolute inset-0 w-full h-full object-cover"
+                      unoptimized
                       onError={() => setImageError(true)}
                     />
                   )}

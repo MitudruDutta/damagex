@@ -2,6 +2,7 @@ import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useDropzone, FileRejection } from "react-dropzone"
 import { Upload, X, Scan, Zap, ImageIcon } from "lucide-react"
+import Image from "next/image"
 
 interface ScannerUploadProps {
   onFileSelect: (file: File | null) => void
@@ -167,10 +168,12 @@ export function ScannerUpload({
             >
               <div className="relative aspect-video w-full">
                 {previewUrl && (
-                  <img
+                  <Image
                     src={previewUrl}
                     alt="Vehicle preview"
+                    fill
                     className="absolute inset-0 w-full h-full object-cover"
+                    unoptimized
                   />
                 )}
                 
